@@ -1,0 +1,134 @@
+:root {
+  --primary: #0d1321;
+  --secondary: #1d2d44;
+  --accent: #3e5c76;
+  --highlight: #778da9;
+  --background: #f0f4fa;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--background);
+}
+
+#app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background: var(--secondary);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.sidebar-header {
+  font-size: 1.3em;
+  font-weight: bold;
+  text-align: center;
+  padding: 1.2em 0;
+  border-bottom: 2px solid var(--accent);
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar nav li {
+  margin: 0.6em 0;
+}
+
+.sidebar nav a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  padding: 0.9em 2em;
+  border-radius: 6px;
+  transition: background 0.18s;
+}
+
+.sidebar nav a:hover, .sidebar nav a.active {
+  background: var(--accent);
+}
+
+#main-content {
+  flex: 1;
+  padding: 2.2em 2em;
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 95vh;
+}
+
+form {
+  background: #fff;
+  padding: 2em 2.5em;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #0002;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1em;
+}
+
+input[type="text"], input[type="password"] {
+  font-size: 1em;
+  padding: 0.75em;
+  border: 1.5px solid #ccc;
+  border-radius: 7px;
+  outline: none;
+  transition: border 0.15s;
+}
+
+input:focus {
+  border-color: var(--accent);
+}
+
+button {
+  padding: 0.75em 1.2em;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-weight: bold;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover {
+  background: var(--highlight);
+}
+
+.admin-section {
+  display: none;
+}
+
+.admin-section:not(.hidden) {
+  display: block;
+  animation: fadein 0.4s;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.error {
+  color: #d90429;
+  font-size: 0.98em;
+  text-align: center;
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

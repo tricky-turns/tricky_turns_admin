@@ -132,3 +132,52 @@ button:hover {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+
+.mode-form {
+  display: flex;
+  gap: 1em;
+  margin-bottom: 1.2em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mode-form input[type="text"] {
+  flex: 1 1 130px;
+}
+
+#modes-table-container {
+  overflow-x: auto;
+}
+
+#modes-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+#modes-table th, #modes-table td {
+  border: 1px solid #e5e5e5;
+  padding: 0.55em 0.85em;
+  text-align: left;
+  font-size: 1em;
+}
+
+#modes-table th {
+  background: var(--highlight);
+  color: #222;
+  font-weight: bold;
+}
+
+#modes-table tr:nth-child(even) {
+  background: #f9fbfd;
+}
+
+#modes-table td input[type="text"] {
+  width: 90%;
+  font-size: 1em;
+}
+
+#modes-table td input[type="checkbox"] {
+  transform: scale(1.1);
+}

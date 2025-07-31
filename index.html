@@ -37,7 +37,35 @@
         </form>
       </section>
       <!-- Section Placeholders -->
-      <section id="modes-section" class="admin-section hidden"><h2>Game Modes</h2><div id="modes-content">Loading...</div></section>
+      <section id="modes-section" class="admin-section hidden">
+  <h2>Game Modes</h2>
+  <form id="mode-add-form" class="mode-form">
+    <input type="text" id="mode-add-name" placeholder="Name" required />
+    <input type="text" id="mode-add-description" placeholder="Description" />
+    <label>
+      <input type="checkbox" id="mode-add-active" checked />
+      Active
+    </label>
+    <button type="submit">Add Mode</button>
+  </form>
+  <div id="modes-table-container">
+    <table id="modes-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Active</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="modes-tbody"></tbody>
+    </table>
+  </div>
+  <div id="modes-error" class="error"></div>
+</section>
+
+      
       <section id="users-section" class="admin-section hidden"><h2>Users</h2><div id="users-content">Loading...</div></section>
       <section id="leaderboard-section" class="admin-section hidden"><h2>Leaderboards</h2><div id="leaderboard-content">Loading...</div></section>
       <section id="shop-section" class="admin-section hidden"><h2>Shop</h2><div id="shop-content">Loading...</div></section>

@@ -88,3 +88,121 @@ sidebar.querySelectorAll("nav a[data-section]").forEach(link => {
 
 // == Initial auth check ==
 checkAuth();
+
+
+// ========== GAME MODES MANAGEMENT ==========
+
+const modesSection = document.getElementById("modes-section");
+const modesTbody = document.getElementById("modes-tbody");
+const modesError = document.getElementById("modes-error");
+const modeAddForm = document.getElementById("mode-add-form");
+
+function loadModes() {
+  modesError.textContent = "";
+  modesTbody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/game_modes"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(modes => {
+      if (!modes.length) {
+        modesTbody.innerHTML = `<tr><td colspan="5"><em>No game modes.</em></td></tr>`;
+        return;
+      }
+      modesTbody.innerHTML = "";
+      modes.forEach(mode => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" value="${mode.name}" data-id="${mode.id}" data-field="name" /></td>
+          <td><input type="text" value="${mode.description || ""}" data-id="${mode.id}" data-field="description" /></td>
+          <td>
+            <input type="checkbox" ${mode.is_active ? "checked" : ""} data-id="${mode.id}" data-field="is_active" />
+          </td>
+          <td>${new Date(mode.created_at).toLocaleString()}</td>
+          <td>
+            <button data-id="${mode.id}" class="save-btn">💾</button>
+            <button data-id="${mode.id}" class="delete-btn" style="color:#d90429">🗑️</button>
+          </td>
+        `;
+        modesTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      modesTbody.innerHTML = "";
+      modesError.textContent = "Failed to load modes.";
+    });
+}
+
+function saveModeField(id, field, value) {
+  fetch(`${API_BASE.replace("/admin", "/admin/game_modes/")}${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ [field]: value })
+  })
+    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+    .then(() => loadModes())
+    .catch(() => {
+      modesError.textContent = "Failed to update mode.";
+    });
+}
+
+function deleteMode(id) {
+  if (!confirm("Delete this mode?")) return;
+  fetch(`${API_BASE.replace("/admin", "/admin/game_modes/")}${id}`, {
+    method: "DELETE",
+    credentials: "include"
+  })
+    .then(r => r.ok ? loadModes() : r.json().then(err => Promise.reject(err)))
+    .catch(() => {
+      modesError.textContent = "Failed to delete mode.";
+    });
+}
+
+modeAddForm.onsubmit = function(e) {
+  e.preventDefault();
+  const name = document.getElementById("mode-add-name").value.trim();
+  const description = document.getElementById("mode-add-description").value.trim();
+  const is_active = document.getElementById("mode-add-active").checked;
+  fetch(API_BASE.replace("/admin", "/admin/game_modes"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, description, is_active })
+  })
+    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+    .then(() => {
+      modeAddForm.reset();
+      document.getElementById("mode-add-active").checked = true;
+      loadModes();
+    })
+    .catch(() => {
+      modesError.textContent = "Failed to add mode.";
+    });
+};
+
+// Inline save/delete handlers
+modesTbody.addEventListener("click", function(e) {
+  if (e.target.classList.contains("save-btn")) {
+    const id = e.target.dataset.id;
+    const row = e.target.closest("tr");
+    const name = row.querySelector('input[data-field="name"]').value.trim();
+    const description = row.querySelector('input[data-field="description"]').value.trim();
+    const is_active = row.querySelector('input[data-field="is_active"]').checked;
+    fetch(`${API_BASE.replace("/admin", "/admin/game_modes/")}${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description, is_active })
+    })
+      .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+      .then(() => loadModes())
+      .catch(() => {
+        modesError.textContent = "Failed to update mode.";
+      });
+  }
+  if (e.target.classList.contains("delete-btn")) {
+    deleteMode(e.target.dataset.id);
+  }
+});
+
+// Reload when section shown
+document.querySelector('a[data-section="modes"]').addEventListener("click", loadModes);

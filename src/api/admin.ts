@@ -1,5 +1,5 @@
 // src/api/admin.ts
-export const API_BASE = "https://tricky-turns-backend.onrender.com/admin";
+export const API_BASE = "https://tricky-turns-backend.onrender.com/admin-auth";
 
 // ---- AUTH ----
 export async function adminLogin(username: string, password: string) {

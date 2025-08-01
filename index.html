@@ -91,7 +91,53 @@
 </section>
       
 
-      <section id="leaderboard-section" class="admin-section hidden"><h2>Leaderboards</h2><div id="leaderboard-content">Loading...</div></section>
+<section id="leaderboard-section" class="admin-section hidden">
+  <h2>Leaderboards</h2>
+  <form id="leaderboard-filter-form" class="mode-form" style="margin-bottom:1.5em;">
+    <label>
+      Mode:
+      <select id="leaderboard-mode-select"></select>
+    </label>
+    <input type="text" id="leaderboard-user-search" placeholder="Filter by username..." />
+    <button type="submit">Filter</button>
+    <button type="button" id="leaderboard-reset">Reset</button>
+  </form>
+  <div id="leaderboard-table-container">
+    <table id="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Username</th>
+          <th>Score</th>
+          <th>Achieved</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-tbody"></tbody>
+    </table>
+  </div>
+  <div id="leaderboard-error" class="error"></div>
+  <hr />
+  <h3>User Score History</h3>
+  <form id="score-history-form" class="mode-form" style="margin-bottom:1em;">
+    <input type="text" id="history-user-search" placeholder="Username..." />
+    <button type="submit">Show History</button>
+  </form>
+  <div id="score-history-table-container">
+    <table id="score-history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Mode ID</th>
+          <th>Score</th>
+          <th>Session ID</th>
+        </tr>
+      </thead>
+      <tbody id="score-history-tbody"></tbody>
+    </table>
+  </div>
+  <div id="score-history-error" class="error"></div>
+</section>
+
       <section id="shop-section" class="admin-section hidden"><h2>Shop</h2><div id="shop-content">Loading...</div></section>
       <section id="contests-section" class="admin-section hidden"><h2>Contests</h2><div id="contests-content">Loading...</div></section>
       <section id="support-section" class="admin-section hidden"><h2>Support</h2><div id="support-content">Loading...</div></section>

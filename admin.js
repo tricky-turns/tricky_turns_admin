@@ -294,3 +294,134 @@ userSearchReset.onclick = function() {
 document.querySelector('a[data-section="users"]').addEventListener("click", function() {
   loadUsers();
 });
+
+
+
+
+// ========== LEADERBOARD MANAGEMENT ==========
+
+const leaderboardModeSelect = document.getElementById("leaderboard-mode-select");
+const leaderboardFilterForm = document.getElementById("leaderboard-filter-form");
+const leaderboardUserSearch = document.getElementById("leaderboard-user-search");
+const leaderboardTbody = document.getElementById("leaderboard-tbody");
+const leaderboardError = document.getElementById("leaderboard-error");
+const leaderboardReset = document.getElementById("leaderboard-reset");
+
+let allModes = [];
+
+function fetchAllModes(cb) {
+  fetch(API_BASE.replace("/admin", "/admin/game_modes"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(modes => {
+      allModes = modes;
+      if (leaderboardModeSelect) {
+        leaderboardModeSelect.innerHTML = "";
+        modes.forEach(mode => {
+          const opt = document.createElement("option");
+          opt.value = mode.id;
+          opt.textContent = mode.name;
+          leaderboardModeSelect.appendChild(opt);
+        });
+      }
+      if (cb) cb(modes);
+    });
+}
+
+function loadLeaderboard(modeId, username = "") {
+  leaderboardError.textContent = "";
+  leaderboardTbody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/leaderboards"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(entries => {
+      let filtered = entries;
+      if (modeId) {
+        filtered = filtered.filter(e => e.mode_id == modeId);
+      }
+      if (username) {
+        filtered = filtered.filter(e => e.username.toLowerCase().includes(username.toLowerCase()));
+      }
+      filtered.sort((a, b) => b.score - a.score);
+      leaderboardTbody.innerHTML = "";
+      if (!filtered.length) {
+        leaderboardTbody.innerHTML = `<tr><td colspan="4"><em>No entries found.</em></td></tr>`;
+        return;
+      }
+      filtered.forEach((entry, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${entry.username}</td>
+          <td>${entry.score}</td>
+          <td>${entry.achieved_at ? new Date(entry.achieved_at).toLocaleString() : "-"}</td>
+        `;
+        leaderboardTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      leaderboardTbody.innerHTML = "";
+      leaderboardError.textContent = "Failed to load leaderboard.";
+    });
+}
+
+leaderboardFilterForm.onsubmit = function(e) {
+  e.preventDefault();
+  loadLeaderboard(
+    leaderboardModeSelect.value,
+    leaderboardUserSearch.value.trim()
+  );
+};
+leaderboardReset.onclick = function() {
+  leaderboardUserSearch.value = "";
+  loadLeaderboard(leaderboardModeSelect.value, "");
+};
+
+// ========== USER SCORE HISTORY ==========
+
+const scoreHistoryForm = document.getElementById("score-history-form");
+const historyUserSearch = document.getElementById("history-user-search");
+const scoreHistoryTbody = document.getElementById("score-history-tbody");
+const scoreHistoryError = document.getElementById("score-history-error");
+
+scoreHistoryForm.onsubmit = function(e) {
+  e.preventDefault();
+  const username = historyUserSearch.value.trim();
+  if (!username) {
+    scoreHistoryError.textContent = "Enter a username.";
+    return;
+  }
+  scoreHistoryError.textContent = "";
+  scoreHistoryTbody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", `/admin/score_history?username=${encodeURIComponent(username)}`), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(history => {
+      scoreHistoryTbody.innerHTML = "";
+      if (!history.length) {
+        scoreHistoryTbody.innerHTML = `<tr><td colspan="4"><em>No scores found.</em></td></tr>`;
+        return;
+      }
+      history.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "-"}</td>
+          <td>${row.mode_id}</td>
+          <td>${row.score}</td>
+          <td>${row.session_id}</td>
+        `;
+        scoreHistoryTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      scoreHistoryTbody.innerHTML = "";
+      scoreHistoryError.textContent = "Failed to load score history.";
+    });
+};
+
+// Load when section is shown
+document.querySelector('a[data-section="leaderboard"]').addEventListener("click", function() {
+  fetchAllModes(function(modes) {
+    if (modes && modes.length) {
+      leaderboardModeSelect.value = modes[0].id;
+      loadLeaderboard(modes[0].id, "");
+    }
+  });
+});

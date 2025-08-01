@@ -595,3 +595,186 @@ purchaseSearchReset.onclick = function() {
 document.querySelector('a[data-section="shop"]').addEventListener("click", function() {
   loadPurchases();
 });
+
+
+// ========== CONTESTS MANAGEMENT ==========
+
+const contestsTbody = document.getElementById("contests-tbody");
+const contestsError = document.getElementById("contests-error");
+const contestAddForm = document.getElementById("contest-add-form");
+const contestAddMode = document.getElementById("contest-add-mode");
+
+function fillContestModes() {
+  fetchAllModes(modes => {
+    contestAddMode.innerHTML = "";
+    modes.forEach(mode => {
+      const opt = document.createElement("option");
+      opt.value = mode.id;
+      opt.textContent = mode.name;
+      contestAddMode.appendChild(opt);
+    });
+  });
+}
+
+function loadContests() {
+  contestsError.textContent = "";
+  contestsTbody.innerHTML = `<tr><td colspan="9">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/contests"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(contests => {
+      contestsTbody.innerHTML = "";
+      if (!contests.length) {
+        contestsTbody.innerHTML = `<tr><td colspan="9"><em>No contests.</em></td></tr>`;
+        return;
+      }
+      contests.forEach(contest => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" value="${contest.name}" data-id="${contest.id}" data-field="name" style="width:80px;" /></td>
+          <td><input type="number" value="${contest.mode_id}" data-id="${contest.id}" data-field="mode_id" style="width:55px;" /></td>
+          <td><input type="datetime-local" value="${contest.start_at ? contest.start_at.slice(0,16) : ""}" data-id="${contest.id}" data-field="start_at" style="width:160px;" /></td>
+          <td><input type="datetime-local" value="${contest.end_at ? contest.end_at.slice(0,16) : ""}" data-id="${contest.id}" data-field="end_at" style="width:160px;" /></td>
+          <td><input type="number" value="${contest.entry_fee}" min="0" step="0.01" data-id="${contest.id}" data-field="entry_fee" style="width:70px;" /></td>
+          <td><input type="number" value="${contest.reward_pool}" min="0" step="0.01" data-id="${contest.id}" data-field="reward_pool" style="width:90px;" /></td>
+          <td><input type="text" value="${contest.status}" data-id="${contest.id}" data-field="status" style="width:60px;" /></td>
+          <td><input type="text" value="${contest.winner_username || ""}" data-id="${contest.id}" data-field="winner_username" style="width:90px;" /></td>
+          <td>
+            <button data-id="${contest.id}" class="contest-save-btn">💾</button>
+            <button data-id="${contest.id}" class="contest-delete-btn" style="color:#d90429">🗑️</button>
+          </td>
+        `;
+        contestsTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      contestsTbody.innerHTML = "";
+      contestsError.textContent = "Failed to load contests.";
+    });
+}
+
+contestAddForm.onsubmit = function(e) {
+  e.preventDefault();
+  const name = document.getElementById("contest-add-name").value.trim();
+  const mode_id = parseInt(contestAddMode.value);
+  const start_at = document.getElementById("contest-add-start").value;
+  const end_at = document.getElementById("contest-add-end").value;
+  const entry_fee = parseFloat(document.getElementById("contest-add-entry-fee").value);
+  const reward_pool = parseFloat(document.getElementById("contest-add-reward").value);
+  const status = document.getElementById("contest-add-status").value.trim();
+  const winner_username = document.getElementById("contest-add-winner").value.trim() || null;
+  fetch(API_BASE.replace("/admin", "/admin/contests"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, mode_id, start_at, end_at, entry_fee, reward_pool, status, winner_username })
+  })
+    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+    .then(() => {
+      contestAddForm.reset();
+      loadContests();
+      fillContestEntries();
+    })
+    .catch(err => {
+      contestsError.textContent = err.detail || "Failed to add contest.";
+    });
+};
+
+contestsTbody.addEventListener("click", function(e) {
+  if (e.target.classList.contains("contest-save-btn")) {
+    const id = e.target.dataset.id;
+    const row = e.target.closest("tr");
+    const fields = {
+      name: row.querySelector('input[data-field="name"]').value.trim(),
+      mode_id: parseInt(row.querySelector('input[data-field="mode_id"]').value),
+      start_at: row.querySelector('input[data-field="start_at"]').value,
+      end_at: row.querySelector('input[data-field="end_at"]').value,
+      entry_fee: parseFloat(row.querySelector('input[data-field="entry_fee"]').value),
+      reward_pool: parseFloat(row.querySelector('input[data-field="reward_pool"]').value),
+      status: row.querySelector('input[data-field="status"]').value.trim(),
+      winner_username: row.querySelector('input[data-field="winner_username"]').value.trim() || null
+    };
+    fetch(`${API_BASE.replace("/admin", "/admin/contests/")}${id}`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields)
+    })
+      .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+      .then(() => loadContests())
+      .catch(() => {
+        contestsError.textContent = "Failed to update contest.";
+      });
+  }
+  if (e.target.classList.contains("contest-delete-btn")) {
+    const id = e.target.dataset.id;
+    if (!confirm("Delete this contest?")) return;
+    fetch(`${API_BASE.replace("/admin", "/admin/contests/")}${id}`, {
+      method: "DELETE",
+      credentials: "include"
+    })
+      .then(r => r.ok ? loadContests() : r.json().then(err => Promise.reject(err)))
+      .catch(() => {
+        contestsError.textContent = "Failed to delete contest.";
+      });
+  }
+});
+
+// ========== CONTEST ENTRIES ==========
+
+const contestEntrySelect = document.getElementById("contest-entry-select");
+const contestEntryForm = document.getElementById("contest-entry-form");
+const contestEntriesTbody = document.getElementById("contest-entries-tbody");
+const contestEntriesError = document.getElementById("contest-entries-error");
+
+function fillContestEntries(cb) {
+  fetch(API_BASE.replace("/admin", "/admin/contests"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(contests => {
+      contestEntrySelect.innerHTML = "";
+      contests.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = `${c.name} (ID: ${c.id})`;
+        contestEntrySelect.appendChild(opt);
+      });
+      if (cb) cb();
+    });
+}
+
+contestEntryForm.onsubmit = function(e) {
+  e.preventDefault();
+  const contest_id = contestEntrySelect.value;
+  contestEntriesError.textContent = "";
+  contestEntriesTbody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", `/admin/contest_entries?contest_id=${contest_id}`), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(entries => {
+      contestEntriesTbody.innerHTML = "";
+      if (!entries.length) {
+        contestEntriesTbody.innerHTML = `<tr><td colspan="5"><em>No entries.</em></td></tr>`;
+        return;
+      }
+      entries.forEach(entry => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${entry.username}</td>
+          <td>${entry.score}</td>
+          <td>${entry.session_id}</td>
+          <td>${entry.entered_at ? new Date(entry.entered_at).toLocaleString() : "-"}</td>
+          <td>${entry.prize_awarded || ""}</td>
+        `;
+        contestEntriesTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      contestEntriesTbody.innerHTML = "";
+      contestEntriesError.textContent = "Failed to load contest entries.";
+    });
+};
+
+// Reload everything when section is shown
+document.querySelector('a[data-section="contests"]').addEventListener("click", function() {
+  fillContestModes();
+  loadContests();
+  fillContestEntries();
+});

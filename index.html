@@ -193,7 +193,63 @@
 </section>
      
 
-      <section id="contests-section" class="admin-section hidden"><h2>Contests</h2><div id="contests-content">Loading...</div></section>
+
+<section id="contests-section" class="admin-section hidden">
+  <h2>Contests</h2>
+  <form id="contest-add-form" class="mode-form">
+    <input type="text" id="contest-add-name" placeholder="Name" required />
+    <select id="contest-add-mode" required></select>
+    <input type="datetime-local" id="contest-add-start" required />
+    <input type="datetime-local" id="contest-add-end" required />
+    <input type="number" id="contest-add-entry-fee" placeholder="Entry Fee" step="0.01" min="0" required style="width:90px;" />
+    <input type="number" id="contest-add-reward" placeholder="Reward Pool" step="0.01" min="0" required style="width:90px;" />
+    <input type="text" id="contest-add-status" placeholder="Status" value="active" required style="width:80px;" />
+    <input type="text" id="contest-add-winner" placeholder="Winner (optional)" />
+    <button type="submit">Add Contest</button>
+  </form>
+  <div id="contests-table-container">
+    <table id="contests-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Mode</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Entry Fee</th>
+          <th>Reward Pool</th>
+          <th>Status</th>
+          <th>Winner</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="contests-tbody"></tbody>
+    </table>
+  </div>
+  <div id="contests-error" class="error"></div>
+  <hr />
+  <h3>Contest Entries</h3>
+  <form id="contest-entry-form" class="mode-form" style="margin-bottom:1.2em;">
+    <select id="contest-entry-select"></select>
+    <button type="submit">Show Entries</button>
+  </form>
+  <div id="contest-entries-table-container">
+    <table id="contest-entries-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Score</th>
+          <th>Session ID</th>
+          <th>Entered At</th>
+          <th>Prize</th>
+        </tr>
+      </thead>
+      <tbody id="contest-entries-tbody"></tbody>
+    </table>
+  </div>
+  <div id="contest-entries-error" class="error"></div>
+</section>
+
+
       <section id="support-section" class="admin-section hidden"><h2>Support</h2><div id="support-content">Loading...</div></section>
       <section id="audit-section" class="admin-section hidden"><h2>Audit Log</h2><div id="audit-content">Loading...</div></section>
     </main>

@@ -250,7 +250,41 @@
 </section>
 
 
-      <section id="support-section" class="admin-section hidden"><h2>Support</h2><div id="support-content">Loading...</div></section>
+      
+<section id="support-section" class="admin-section hidden">
+  <h2>Support Tickets</h2>
+  <div id="support-table-container">
+    <table id="support-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User</th>
+          <th>Subject</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="support-tbody"></tbody>
+    </table>
+  </div>
+  <div id="support-error" class="error"></div>
+  <div id="support-details" style="margin-top:2em;display:none;">
+    <h3>Ticket Details</h3>
+    <div><b>ID:</b> <span id="support-detail-id"></span></div>
+    <div><b>User:</b> <span id="support-detail-user"></span></div>
+    <div><b>Subject:</b> <span id="support-detail-subject"></span></div>
+    <div><b>Status:</b> <span id="support-detail-status"></span></div>
+    <div><b>Created:</b> <span id="support-detail-created"></span></div>
+    <div><b>Message:</b></div>
+    <div id="support-detail-message" style="white-space:pre-line;background:#f6f6f9;border-radius:6px;padding:1em;margin:0.7em 0;"></div>
+    <button id="support-detail-close" style="margin-top:1em;">Close Ticket</button>
+    <button id="support-detail-back" style="margin-top:1em;margin-left:1em;">Back</button>
+    <div id="support-detail-error" class="error"></div>
+  </div>
+</section>
+
+
       <section id="audit-section" class="admin-section hidden"><h2>Audit Log</h2><div id="audit-content">Loading...</div></section>
     </main>
   </div>

@@ -778,3 +778,116 @@ document.querySelector('a[data-section="contests"]').addEventListener("click", f
   loadContests();
   fillContestEntries();
 });
+
+
+// ========== SUPPORT TICKETS MANAGEMENT ==========
+
+const supportTbody = document.getElementById("support-tbody");
+const supportError = document.getElementById("support-error");
+const supportDetails = document.getElementById("support-details");
+const supportDetailId = document.getElementById("support-detail-id");
+const supportDetailUser = document.getElementById("support-detail-user");
+const supportDetailSubject = document.getElementById("support-detail-subject");
+const supportDetailStatus = document.getElementById("support-detail-status");
+const supportDetailCreated = document.getElementById("support-detail-created");
+const supportDetailMessage = document.getElementById("support-detail-message");
+const supportDetailClose = document.getElementById("support-detail-close");
+const supportDetailBack = document.getElementById("support-detail-back");
+const supportDetailError = document.getElementById("support-detail-error");
+
+let supportTicketsCache = [];
+
+function loadSupportTickets() {
+  supportError.textContent = "";
+  supportTbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/support_tickets"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(tickets => {
+      supportTicketsCache = tickets;
+      supportTbody.innerHTML = "";
+      if (!tickets.length) {
+        supportTbody.innerHTML = `<tr><td colspan="6"><em>No support tickets.</em></td></tr>`;
+        return;
+      }
+      tickets.forEach(ticket => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${ticket.id}</td>
+          <td>${ticket.username}</td>
+          <td>${ticket.subject}</td>
+          <td>${ticket.status}</td>
+          <td>${ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ""}</td>
+          <td>
+            <button class="support-view-btn" data-id="${ticket.id}">View</button>
+            ${ticket.status !== "closed"
+              ? `<button class="support-close-btn" data-id="${ticket.id}" style="color:#d90429;">Close</button>`
+              : ""}
+          </td>
+        `;
+        supportTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      supportTbody.innerHTML = "";
+      supportError.textContent = "Failed to load support tickets.";
+    });
+}
+
+// View ticket details
+supportTbody.addEventListener("click", function(e) {
+  if (e.target.classList.contains("support-view-btn")) {
+    const id = parseInt(e.target.dataset.id);
+    const ticket = supportTicketsCache.find(t => t.id === id);
+    if (!ticket) return;
+    supportDetailId.textContent = ticket.id;
+    supportDetailUser.textContent = ticket.username;
+    supportDetailSubject.textContent = ticket.subject;
+    supportDetailStatus.textContent = ticket.status;
+    supportDetailCreated.textContent = ticket.created_at ? new Date(ticket.created_at).toLocaleString() : "";
+    supportDetailMessage.textContent = ticket.message;
+    supportDetails.style.display = "block";
+    supportDetailClose.style.display = ticket.status === "closed" ? "none" : "";
+    supportDetailError.textContent = "";
+    mainContent.querySelector("#support-table-container").style.display = "none";
+  }
+  if (e.target.classList.contains("support-close-btn")) {
+    const id = parseInt(e.target.dataset.id);
+    closeSupportTicket(id, function() {
+      loadSupportTickets();
+    });
+  }
+});
+
+supportDetailBack.onclick = function() {
+  supportDetails.style.display = "none";
+  mainContent.querySelector("#support-table-container").style.display = "";
+  supportDetailError.textContent = "";
+};
+
+supportDetailClose.onclick = function() {
+  const id = parseInt(supportDetailId.textContent);
+  closeSupportTicket(id, function() {
+    supportDetails.style.display = "none";
+    mainContent.querySelector("#support-table-container").style.display = "";
+    loadSupportTickets();
+  });
+};
+
+function closeSupportTicket(id, cb) {
+  fetch(API_BASE.replace("/admin", `/admin/support_tickets/${id}/close`), {
+    method: "POST",
+    credentials: "include"
+  })
+    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+    .then(cb)
+    .catch(err => {
+      supportDetailError.textContent = (err && err.detail) || "Failed to close ticket.";
+    });
+}
+
+// Load on section show
+document.querySelector('a[data-section="support"]').addEventListener("click", function() {
+  loadSupportTickets();
+  supportDetails.style.display = "none";
+  mainContent.querySelector("#support-table-container").style.display = "";
+});

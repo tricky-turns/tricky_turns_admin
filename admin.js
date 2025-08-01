@@ -11,7 +11,7 @@ const logoutBtn = document.getElementById("logoutBtn");
 
 // All section IDs:
 const sections = [
-  "modes", "users", "leaderboard", "shop", "contests", "support", "audit"
+  "modes", "users", "leaderboard", "shop", "contests", "support", "audit", "analytics"
 ];
 
 // == Helper: show only one section ==

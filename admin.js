@@ -206,3 +206,91 @@ modesTbody.addEventListener("click", function(e) {
 
 // Reload when section shown
 document.querySelector('a[data-section="modes"]').addEventListener("click", loadModes);
+
+
+// ========== USER MANAGEMENT ==========
+
+const usersTbody = document.getElementById("users-tbody");
+const usersError = document.getElementById("users-error");
+const userSearchForm = document.getElementById("user-search-form");
+const userSearchInput = document.getElementById("user-search");
+const userSearchReset = document.getElementById("user-search-reset");
+
+let lastUsersData = [];
+
+function loadUsers(search = "") {
+  usersError.textContent = "";
+  usersTbody.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/users"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(users => {
+      lastUsersData = users;
+      let filtered = users;
+      if (search) {
+        filtered = users.filter(u => u.username.toLowerCase().includes(search.toLowerCase()));
+      }
+      if (!filtered.length) {
+        usersTbody.innerHTML = `<tr><td colspan="5"><em>No users found.</em></td></tr>`;
+        return;
+      }
+      usersTbody.innerHTML = "";
+      filtered.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${user.username}</td>
+          <td>${user.created_at ? new Date(user.created_at).toLocaleString() : "-"}</td>
+          <td>${user.last_login ? new Date(user.last_login).toLocaleString() : "-"}</td>
+          <td style="text-align:center">${user.is_banned ? "✅" : ""}</td>
+          <td>
+            <button class="ban-btn" data-username="${user.username}" style="color:${user.is_banned ? "#08a000" : "#d90429"}">
+              ${user.is_banned ? "Unban" : "Ban"}
+            </button>
+          </td>
+        `;
+        usersTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      usersTbody.innerHTML = "";
+      usersError.textContent = "Failed to load users.";
+    });
+}
+
+// Ban/Unban handler
+usersTbody.addEventListener("click", function(e) {
+  if (e.target.classList.contains("ban-btn")) {
+    const username = e.target.dataset.username;
+    const isBanned = e.target.textContent === "Unban";
+    const url = isBanned
+      ? API_BASE.replace("/admin", "/admin/users/unban")
+      : API_BASE.replace("/admin", "/admin/users/ban");
+    fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username })
+    })
+      .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+      .then(() => loadUsers(userSearchInput.value))
+      .catch(err => {
+        usersError.textContent = (err && err.detail) || "Failed to update user.";
+      });
+  }
+});
+
+// Search form
+userSearchForm.onsubmit = function(e) {
+  e.preventDefault();
+  loadUsers(userSearchInput.value.trim());
+};
+
+// Reset search
+userSearchReset.onclick = function() {
+  userSearchInput.value = "";
+  loadUsers();
+};
+
+// Reload when section shown
+document.querySelector('a[data-section="users"]').addEventListener("click", function() {
+  loadUsers();
+});

@@ -181,3 +181,15 @@ button:hover {
 #modes-table td input[type="checkbox"] {
   transform: scale(1.1);
 }
+
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0002;
+  padding: 1.1em 1.6em;
+  margin-bottom: 1.5em;
+  min-width: 110px;
+  text-align: center;
+}
+.stat-title { font-size: 1em; color: #888; margin-bottom: 0.2em; }
+.stat-value { font-size: 1.65em; font-weight: bold; color: var(--accent); }

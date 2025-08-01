@@ -5,6 +5,7 @@
   <title>Tricky Turns Admin Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div id="app">
@@ -19,6 +20,7 @@
           <li><a href="#" data-section="shop">Shop</a></li>
           <li><a href="#" data-section="contests">Contests</a></li>
           <li><a href="#" data-section="support">Support</a></li>
+          <li><a href="#" data-section="analytics">Analytics</a></li>
           <li><a href="#" data-section="audit">Audit Log</a></li>
           <li><a href="#" id="logoutBtn" style="color: #ff4444">Logout</a></li>
         </ul>
@@ -309,6 +311,60 @@
     </table>
   </div>
   <div id="audit-error" class="error"></div>
+</section>
+
+
+<section id="analytics-section" class="admin-section hidden">
+  <h2>Analytics Dashboard</h2>
+  <div id="analytics-summary" style="display:flex;gap:2em;flex-wrap:wrap;margin-bottom:1.5em;">
+    <div class="stat-card">
+      <div class="stat-title">DAU (24h)</div>
+      <div class="stat-value" id="stat-dau">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">WAU (7d)</div>
+      <div class="stat-value" id="stat-wau">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">MAU (30d)</div>
+      <div class="stat-value" id="stat-mau">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Top Mode</div>
+      <div class="stat-value" id="stat-top-mode">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Top Shop Item</div>
+      <div class="stat-value" id="stat-top-item">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Purchases (30d)</div>
+      <div class="stat-value" id="stat-purchases">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-title">Support Tickets (30d)</div>
+      <div class="stat-value" id="stat-support">-</div>
+    </div>
+  </div>
+  <div>
+    <h3>Sessions Per Day (Last 14d)</h3>
+    <canvas id="sessions-chart" height="90"></canvas>
+  </div>
+  <div>
+    <h3>Most Popular Modes</h3>
+    <table id="analytics-modes-table" style="margin-top:0.7em;width:auto;">
+      <thead><tr><th>Mode</th><th>Sessions</th></tr></thead>
+      <tbody id="analytics-modes-tbody"></tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Most Purchased Shop Items</h3>
+    <table id="analytics-items-table" style="margin-top:0.7em;width:auto;">
+      <thead><tr><th>Item</th><th>Purchases</th><th>Revenue</th></tr></thead>
+      <tbody id="analytics-items-tbody"></tbody>
+    </table>
+  </div>
+  <div id="analytics-error" class="error"></div>
 </section>
 
     </main>

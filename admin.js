@@ -955,3 +955,131 @@ auditSearchReset.onclick = function() {
 document.querySelector('a[data-section="audit"]').addEventListener("click", function() {
   loadAuditLog();
 });
+
+
+// ========== ANALYTICS DASHBOARD ==========
+
+const statDau = document.getElementById("stat-dau");
+const statWau = document.getElementById("stat-wau");
+const statMau = document.getElementById("stat-mau");
+const statTopMode = document.getElementById("stat-top-mode");
+const statTopItem = document.getElementById("stat-top-item");
+const statPurchases = document.getElementById("stat-purchases");
+const statSupport = document.getElementById("stat-support");
+const analyticsError = document.getElementById("analytics-error");
+const analyticsModesTbody = document.getElementById("analytics-modes-tbody");
+const analyticsItemsTbody = document.getElementById("analytics-items-tbody");
+let sessionsChart;
+
+function loadAnalytics() {
+  analyticsError.textContent = "";
+  // Fetch game sessions, purchases, modes, shop items, support tickets
+  Promise.all([
+    fetch(API_BASE.replace("/admin", "/admin/game_sessions"), { credentials: "include" }).then(r => r.json()),
+    fetch(API_BASE.replace("/admin", "/admin/game_modes"), { credentials: "include" }).then(r => r.json()),
+    fetch(API_BASE.replace("/admin", "/admin/purchases"), { credentials: "include" }).then(r => r.json()),
+    fetch(API_BASE.replace("/admin", "/admin/shop/items"), { credentials: "include" }).then(r => r.json()),
+    fetch(API_BASE.replace("/admin", "/admin/support_tickets"), { credentials: "include" }).then(r => r.json()),
+  ]).then(([sessions, modes, purchases, items, tickets]) => {
+    // ---- DAU/WAU/MAU ----
+    const now = new Date();
+    let dauSet = new Set();
+    let wauSet = new Set();
+    let mauSet = new Set();
+    let sessionsByDay = {};
+    sessions.forEach(s => {
+      if (!s.started_at || !s.username) return;
+      const t = new Date(s.started_at);
+      const daysAgo = (now - t) / (1000 * 60 * 60 * 24);
+      if (daysAgo <= 1) dauSet.add(s.username);
+      if (daysAgo <= 7) wauSet.add(s.username);
+      if (daysAgo <= 30) mauSet.add(s.username);
+      const day = t.toISOString().slice(0,10);
+      sessionsByDay[day] = (sessionsByDay[day] || 0) + 1;
+    });
+    statDau.textContent = dauSet.size;
+    statWau.textContent = wauSet.size;
+    statMau.textContent = mauSet.size;
+
+    // ---- Sessions Chart (last 14d) ----
+    let chartLabels = [];
+    let chartData = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now - i*24*60*60*1000);
+      const key = d.toISOString().slice(0,10);
+      chartLabels.push(key);
+      chartData.push(sessionsByDay[key] || 0);
+    }
+    if (sessionsChart) sessionsChart.destroy();
+    const ctx = document.getElementById("sessions-chart").getContext("2d");
+    sessionsChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: "Sessions per Day",
+          data: chartData,
+          fill: false,
+          borderColor: "#3e5c76",
+          tension: 0.18
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // ---- Mode popularity ----
+    let modeCounts = {};
+    sessions.forEach(s => {
+      if (s.mode_id) modeCounts[s.mode_id] = (modeCounts[s.mode_id] || 0) + 1;
+    });
+    let sortedModes = Object.entries(modeCounts)
+      .sort((a,b) => b[1]-a[1])
+      .map(([modeId,count]) => ({ modeId, count }));
+    analyticsModesTbody.innerHTML = "";
+    sortedModes.forEach(row => {
+      const modeName = (modes.find(m => m.id == row.modeId) || {}).name || row.modeId;
+      analyticsModesTbody.innerHTML += `<tr><td>${modeName}</td><td>${row.count}</td></tr>`;
+    });
+    statTopMode.textContent = sortedModes.length
+      ? ((modes.find(m => m.id == sortedModes[0].modeId) || {}).name || sortedModes[0].modeId)
+      : "-";
+
+    // ---- Shop purchases ----
+    let itemCounts = {};
+    let itemRevenues = {};
+    purchases.forEach(p => {
+      if (!p.item_id) return;
+      itemCounts[p.item_id] = (itemCounts[p.item_id] || 0) + 1;
+      itemRevenues[p.item_id] = (itemRevenues[p.item_id] || 0) + (p.amount || 0);
+    });
+    let sortedItems = Object.entries(itemCounts)
+      .sort((a,b) => b[1]-a[1])
+      .map(([itemId,count]) => ({ itemId, count, revenue: itemRevenues[itemId] }));
+    analyticsItemsTbody.innerHTML = "";
+    sortedItems.forEach(row => {
+      const itemName = (items.find(i => i.id == row.itemId) || {}).name || row.itemId;
+      analyticsItemsTbody.innerHTML += `<tr><td>${itemName}</td><td>${row.count}</td><td>${row.revenue.toFixed(2)}</td></tr>`;
+    });
+    statTopItem.textContent = sortedItems.length
+      ? ((items.find(i => i.id == sortedItems[0].itemId) || {}).name || sortedItems[0].itemId)
+      : "-";
+    statPurchases.textContent = purchases.filter(p => {
+      const t = new Date(p.purchased_at);
+      return ((now - t) / (1000 * 60 * 60 * 24)) <= 30;
+    }).length;
+
+    // ---- Support tickets ----
+    statSupport.textContent = tickets.filter(t => {
+      const tdate = new Date(t.created_at);
+      return ((now - tdate) / (1000 * 60 * 60 * 24)) <= 30;
+    }).length;
+  }).catch(() => {
+    analyticsError.textContent = "Failed to load analytics.";
+  });
+}
+
+// Load when section is shown
+document.querySelector('a[data-section="analytics"]').addEventListener("click", loadAnalytics);

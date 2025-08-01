@@ -973,16 +973,18 @@ let sessionsChart;
 
 function loadAnalytics() {
   analyticsError.textContent = "";
-  // Fetch game sessions, purchases, modes, shop items, support tickets
+  // Fetch all necessary data in one go
   Promise.all([
     fetch(API_BASE.replace("/admin", "/admin/game_sessions"), { credentials: "include" }).then(r => r.json()),
     fetch(API_BASE.replace("/admin", "/admin/game_modes"), { credentials: "include" }).then(r => r.json()),
     fetch(API_BASE.replace("/admin", "/admin/purchases"), { credentials: "include" }).then(r => r.json()),
     fetch(API_BASE.replace("/admin", "/admin/shop/items"), { credentials: "include" }).then(r => r.json()),
     fetch(API_BASE.replace("/admin", "/admin/support_tickets"), { credentials: "include" }).then(r => r.json()),
-  ]).then(([sessions, modes, purchases, items, tickets]) => {
-    // ---- DAU/WAU/MAU ----
+    fetch(API_BASE.replace("/admin", "/admin/users"), { credentials: "include" }).then(r => r.json()),
+  ]).then(([sessions, modes, purchases, items, tickets, users]) => {
     const now = new Date();
+
+    // ---- DAU/WAU/MAU ----
     let dauSet = new Set();
     let wauSet = new Set();
     let mauSet = new Set();
@@ -1001,7 +1003,7 @@ function loadAnalytics() {
     statWau.textContent = wauSet.size;
     statMau.textContent = mauSet.size;
 
-    // ---- Sessions Chart (last 14d) ----
+    // ---- Sessions Per Day Chart (Last 14 Days) ----
     let chartLabels = [];
     let chartData = [];
     for (let i = 13; i >= 0; i--) {
@@ -1030,7 +1032,7 @@ function loadAnalytics() {
       }
     });
 
-    // ---- Mode popularity ----
+    // ---- Mode Popularity ----
     let modeCounts = {};
     sessions.forEach(s => {
       if (s.mode_id) modeCounts[s.mode_id] = (modeCounts[s.mode_id] || 0) + 1;
@@ -1047,7 +1049,7 @@ function loadAnalytics() {
       ? ((modes.find(m => m.id == sortedModes[0].modeId) || {}).name || sortedModes[0].modeId)
       : "-";
 
-    // ---- Shop purchases ----
+    // ---- Shop Purchases ----
     let itemCounts = {};
     let itemRevenues = {};
     purchases.forEach(p => {
@@ -1071,15 +1073,107 @@ function loadAnalytics() {
       return ((now - t) / (1000 * 60 * 60 * 24)) <= 30;
     }).length;
 
-    // ---- Support tickets ----
+    // ---- Support Tickets ----
     statSupport.textContent = tickets.filter(t => {
       const tdate = new Date(t.created_at);
       return ((now - tdate) / (1000 * 60 * 60 * 24)) <= 30;
     }).length;
+
+    // ---- Retention Cohort Chart ----
+    try {
+      const retentionStats = calculateRetentionCohorts(users, sessions);
+      const retentionLabels = retentionStats.map(c => c.date);
+      const day1 = retentionStats.map(c => c.day1);
+      const day3 = retentionStats.map(c => c.day3);
+      const day7 = retentionStats.map(c => c.day7);
+      const day14 = retentionStats.map(c => c.day14);
+      const day30 = retentionStats.map(c => c.day30);
+      if (retentionChart) retentionChart.destroy();
+      const rctx = document.getElementById("retention-chart").getContext("2d");
+      retentionChart = new Chart(rctx, {
+        type: "line",
+        data: {
+          labels: retentionLabels,
+          datasets: [
+            { label: "Day 1", data: day1, borderColor: "#7ec4cf", fill: false },
+            { label: "Day 3", data: day3, borderColor: "#3e5c76", fill: false },
+            { label: "Day 7", data: day7, borderColor: "#bc5090", fill: false },
+            { label: "Day 14", data: day14, borderColor: "#ffa600", fill: false },
+            { label: "Day 30", data: day30, borderColor: "#003f5c", fill: false },
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: { y: { min: 0, max: 100, title: { display: true, text: "%" } } }
+        }
+      });
+      document.getElementById("retention-error").textContent = "";
+    } catch (e) {
+      document.getElementById("retention-error").textContent = "Could not compute retention cohorts.";
+    }
   }).catch(() => {
     analyticsError.textContent = "Failed to load analytics.";
   });
 }
 
+
+
 // Load when section is shown
 document.querySelector('a[data-section="analytics"]').addEventListener("click", loadAnalytics);
+
+let retentionChart;
+
+function calculateRetentionCohorts(users, sessions) {
+  // For each user, get created_at date and all sessions
+  // For each signup date, create a cohort of users who signed up that day
+  // For each cohort, compute % who return on day 1, 3, 7, 14, 30 (from signup)
+  // Returns: [{date, total, day1, day3, day7, day14, day30}]
+  // Only last 14 cohorts shown
+
+  // 1. Build map of sessions per user
+  const sessionsByUser = {};
+  sessions.forEach(s => {
+    if (!s.username || !s.started_at) return;
+    if (!sessionsByUser[s.username]) sessionsByUser[s.username] = [];
+    sessionsByUser[s.username].push(new Date(s.started_at));
+  });
+
+  // 2. Build cohorts by signup date (ISO yyyy-mm-dd)
+  const cohorts = {};
+  users.forEach(u => {
+    if (!u.username || !u.created_at) return;
+    const signup = new Date(u.created_at);
+    const signupDay = signup.toISOString().slice(0,10);
+    if (!cohorts[signupDay]) cohorts[signupDay] = [];
+    cohorts[signupDay].push(u.username);
+  });
+
+  // 3. For each cohort, compute retention rates
+  const cohortStats = [];
+  Object.entries(cohorts).sort().slice(-14).forEach(([signupDay, usernames]) => {
+    let total = usernames.length;
+    let retained = { day1: 0, day3: 0, day7: 0, day14: 0, day30: 0 };
+    usernames.forEach(username => {
+      const signupDate = new Date(signupDay + "T00:00:00Z");
+      const userSessions = (sessionsByUser[username] || []).filter(d => d > signupDate);
+      // day1: played again 1 day after signup
+      if (userSessions.find(d => d - signupDate >= 24*3600*1000 && d - signupDate < 2*24*3600*1000)) retained.day1++;
+      if (userSessions.find(d => d - signupDate >= 3*24*3600*1000 && d - signupDate < 4*24*3600*1000)) retained.day3++;
+      if (userSessions.find(d => d - signupDate >= 7*24*3600*1000 && d - signupDate < 8*24*3600*1000)) retained.day7++;
+      if (userSessions.find(d => d - signupDate >= 14*24*3600*1000 && d - signupDate < 15*24*3600*1000)) retained.day14++;
+      if (userSessions.find(d => d - signupDate >= 30*24*3600*1000 && d - signupDate < 31*24*3600*1000)) retained.day30++;
+    });
+    // Calculate rates as percent of original cohort
+    cohortStats.push({
+      date: signupDay,
+      total,
+      day1: total ? Math.round(100 * retained.day1 / total) : 0,
+      day3: total ? Math.round(100 * retained.day3 / total) : 0,
+      day7: total ? Math.round(100 * retained.day7 / total) : 0,
+      day14: total ? Math.round(100 * retained.day14 / total) : 0,
+      day30: total ? Math.round(100 * retained.day30 / total) : 0,
+    });
+  });
+  return cohortStats;
+}

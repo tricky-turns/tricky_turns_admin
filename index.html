@@ -285,7 +285,32 @@
 </section>
 
 
-      <section id="audit-section" class="admin-section hidden"><h2>Audit Log</h2><div id="audit-content">Loading...</div></section>
+      
+<section id="audit-section" class="admin-section hidden">
+  <h2>Admin Audit Log</h2>
+  <form id="audit-search-form" class="mode-form" style="margin-bottom:1.5em;">
+    <input type="text" id="audit-search" placeholder="Filter by admin username..." />
+    <button type="submit">Search</button>
+    <button type="button" id="audit-search-reset">Reset</button>
+  </form>
+  <div id="audit-table-container">
+    <table id="audit-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Admin</th>
+          <th>Action</th>
+          <th>Table</th>
+          <th>Target ID</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="audit-tbody"></tbody>
+    </table>
+  </div>
+  <div id="audit-error" class="error"></div>
+</section>
+
     </main>
   </div>
   <script src="admin.js"></script>

@@ -891,3 +891,67 @@ document.querySelector('a[data-section="support"]').addEventListener("click", fu
   supportDetails.style.display = "none";
   mainContent.querySelector("#support-table-container").style.display = "";
 });
+
+
+// ========== AUDIT LOG ==========
+
+const auditTbody = document.getElementById("audit-tbody");
+const auditError = document.getElementById("audit-error");
+const auditSearchForm = document.getElementById("audit-search-form");
+const auditSearchInput = document.getElementById("audit-search");
+const auditSearchReset = document.getElementById("audit-search-reset");
+
+let auditLogCache = [];
+
+function loadAuditLog(search = "") {
+  auditError.textContent = "";
+  auditTbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/audit_log"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(rows => {
+      auditLogCache = rows.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      let filtered = auditLogCache;
+      if (search) {
+        filtered = filtered.filter(row =>
+          row.admin_username.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+      auditTbody.innerHTML = "";
+      if (!filtered.length) {
+        auditTbody.innerHTML = `<tr><td colspan="6"><em>No audit log entries.</em></td></tr>`;
+        return;
+      }
+      filtered.slice(0, 100).forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.timestamp ? new Date(row.timestamp).toLocaleString() : ""}</td>
+          <td>${row.admin_username}</td>
+          <td>${row.action}</td>
+          <td>${row.target_table}</td>
+          <td>${row.target_id || ""}</td>
+          <td>${row.notes || ""}</td>
+        `;
+        auditTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      auditTbody.innerHTML = "";
+      auditError.textContent = "Failed to load audit log.";
+    });
+}
+
+// Search form
+auditSearchForm.onsubmit = function(e) {
+  e.preventDefault();
+  loadAuditLog(auditSearchInput.value.trim());
+};
+
+auditSearchReset.onclick = function() {
+  auditSearchInput.value = "";
+  loadAuditLog();
+};
+
+// Reload when section is shown
+document.querySelector('a[data-section="audit"]').addEventListener("click", function() {
+  loadAuditLog();
+});

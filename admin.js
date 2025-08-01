@@ -425,3 +425,173 @@ document.querySelector('a[data-section="leaderboard"]').addEventListener("click"
     }
   });
 });
+
+
+// ========== SHOP ITEMS MANAGEMENT ==========
+
+const shopTbody = document.getElementById("shop-tbody");
+const shopError = document.getElementById("shop-error");
+const shopAddForm = document.getElementById("shop-add-form");
+
+function loadShopItems() {
+  shopError.textContent = "";
+  shopTbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  fetch(API_BASE.replace("/admin", "/admin/shop/items"), { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(items => {
+      shopTbody.innerHTML = "";
+      if (!items.length) {
+        shopTbody.innerHTML = `<tr><td colspan="6"><em>No shop items.</em></td></tr>`;
+        return;
+      }
+      items.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="text" value="${item.name}" data-id="${item.id}" data-field="name" /></td>
+          <td><input type="text" value="${item.description || ""}" data-id="${item.id}" data-field="description" /></td>
+          <td><input type="number" value="${item.price}" min="0" step="0.01" data-id="${item.id}" data-field="price" style="width:90px;" /></td>
+          <td><input type="text" value="${item.type || ""}" data-id="${item.id}" data-field="type" style="width:90px;" /></td>
+          <td>
+            <input type="checkbox" ${item.is_active ? "checked" : ""} data-id="${item.id}" data-field="is_active" />
+          </td>
+          <td>
+            <button data-id="${item.id}" class="shop-save-btn">💾</button>
+            <button data-id="${item.id}" class="shop-delete-btn" style="color:#d90429">🗑️</button>
+          </td>
+        `;
+        shopTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      shopTbody.innerHTML = "";
+      shopError.textContent = "Failed to load shop items.";
+    });
+}
+
+function saveShopItem(id, fields) {
+  fetch(`${API_BASE.replace("/admin", "/admin/shop/items/")}${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields)
+  })
+    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+    .then(() => loadShopItems())
+    .catch(() => {
+      shopError.textContent = "Failed to update item.";
+    });
+}
+
+function deleteShopItem(id) {
+  if (!confirm("Delete this shop item?")) return;
+  fetch(`${API_BASE.replace("/admin", "/admin/shop/items/")}${id}`, {
+    method: "DELETE",
+    credentials: "include"
+  })
+    .then(r => r.ok ? loadShopItems() : r.json().then(err => Promise.reject(err)))
+    .catch(() => {
+      shopError.textContent = "Failed to delete item.";
+    });
+}
+
+shopAddForm.onsubmit = function(e) {
+  e.preventDefault();
+  const name = document.getElementById("shop-add-name").value.trim();
+  const description = document.getElementById("shop-add-description").value.trim();
+  const price = parseFloat(document.getElementById("shop-add-price").value);
+  const type = document.getElementById("shop-add-type").value.trim();
+  const is_active = document.getElementById("shop-add-active").checked;
+  fetch(API_BASE.replace("/admin", "/admin/shop/items"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, description, price, type, is_active })
+  })
+    .then(r => r.ok ? r.json() : r.json().then(err => Promise.reject(err)))
+    .then(() => {
+      shopAddForm.reset();
+      document.getElementById("shop-add-active").checked = true;
+      loadShopItems();
+    })
+    .catch(err => {
+      shopError.textContent = err.detail || "Failed to add item.";
+    });
+};
+
+// Inline save/delete handlers
+shopTbody.addEventListener("click", function(e) {
+  if (e.target.classList.contains("shop-save-btn")) {
+    const id = e.target.dataset.id;
+    const row = e.target.closest("tr");
+    const name = row.querySelector('input[data-field="name"]').value.trim();
+    const description = row.querySelector('input[data-field="description"]').value.trim();
+    const price = parseFloat(row.querySelector('input[data-field="price"]').value);
+    const type = row.querySelector('input[data-field="type"]').value.trim();
+    const is_active = row.querySelector('input[data-field="is_active"]').checked;
+    saveShopItem(id, { name, description, price, type, is_active });
+  }
+  if (e.target.classList.contains("shop-delete-btn")) {
+    deleteShopItem(e.target.dataset.id);
+  }
+});
+
+// Reload when section shown
+document.querySelector('a[data-section="shop"]').addEventListener("click", loadShopItems);
+
+// ========== PURCHASES MANAGEMENT ==========
+
+const purchasesTbody = document.getElementById("purchases-tbody");
+const purchaseError = document.getElementById("purchase-error");
+const purchaseSearchForm = document.getElementById("purchase-search-form");
+const purchaseUserSearch = document.getElementById("purchase-user-search");
+const purchaseSearchReset = document.getElementById("purchase-search-reset");
+
+function loadPurchases(username = "") {
+  purchaseError.textContent = "";
+  purchasesTbody.innerHTML = `<tr><td colspan="6">Loading...</td></tr>`;
+  let url = API_BASE.replace("/admin", "/admin/purchases");
+  fetch(url, { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      let filtered = data;
+      if (username) {
+        filtered = filtered.filter(p => p.username.toLowerCase().includes(username.toLowerCase()));
+      }
+      purchasesTbody.innerHTML = "";
+      if (!filtered.length) {
+        purchasesTbody.innerHTML = `<tr><td colspan="6"><em>No purchases.</em></td></tr>`;
+        return;
+      }
+      filtered.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.username}</td>
+          <td>${row.item_id}</td>
+          <td>${row.amount}</td>
+          <td>${row.status}</td>
+          <td>${row.purchased_at ? new Date(row.purchased_at).toLocaleString() : "-"}</td>
+          <td>${row.tx_hash || ""}</td>
+        `;
+        purchasesTbody.appendChild(tr);
+      });
+    })
+    .catch(() => {
+      purchasesTbody.innerHTML = "";
+      purchaseError.textContent = "Failed to load purchases.";
+    });
+}
+
+purchaseSearchForm.onsubmit = function(e) {
+  e.preventDefault();
+  loadPurchases(purchaseUserSearch.value.trim());
+};
+
+purchaseSearchReset.onclick = function() {
+  purchaseUserSearch.value = "";
+  loadPurchases();
+};
+
+// Reload purchases when shop section is shown
+document.querySelector('a[data-section="shop"]').addEventListener("click", function() {
+  loadPurchases();
+});

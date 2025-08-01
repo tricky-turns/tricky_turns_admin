@@ -138,7 +138,61 @@
   <div id="score-history-error" class="error"></div>
 </section>
 
-      <section id="shop-section" class="admin-section hidden"><h2>Shop</h2><div id="shop-content">Loading...</div></section>
+<section id="shop-section" class="admin-section hidden">
+  <h2>Shop Items</h2>
+  <form id="shop-add-form" class="mode-form">
+    <input type="text" id="shop-add-name" placeholder="Name" required />
+    <input type="text" id="shop-add-description" placeholder="Description" />
+    <input type="number" id="shop-add-price" placeholder="Price" step="0.01" min="0" required style="width:100px;" />
+    <input type="text" id="shop-add-type" placeholder="Type (skin, boost...)" style="width:120px;" />
+    <label>
+      <input type="checkbox" id="shop-add-active" checked />
+      Active
+    </label>
+    <button type="submit">Add Item</button>
+  </form>
+  <div id="shop-table-container">
+    <table id="shop-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Price</th>
+          <th>Type</th>
+          <th>Active</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="shop-tbody"></tbody>
+    </table>
+  </div>
+  <div id="shop-error" class="error"></div>
+  <hr />
+  <h3>Purchases</h3>
+  <form id="purchase-search-form" class="mode-form" style="margin-bottom:1.2em;">
+    <input type="text" id="purchase-user-search" placeholder="Username..." />
+    <button type="submit">Filter</button>
+    <button type="button" id="purchase-search-reset">Reset</button>
+  </form>
+  <div id="purchases-table-container">
+    <table id="purchases-table">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Item ID</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Purchased At</th>
+          <th>Tx Hash</th>
+        </tr>
+      </thead>
+      <tbody id="purchases-tbody"></tbody>
+    </table>
+  </div>
+  <div id="purchase-error" class="error"></div>
+</section>
+     
+
       <section id="contests-section" class="admin-section hidden"><h2>Contests</h2><div id="contests-content">Loading...</div></section>
       <section id="support-section" class="admin-section hidden"><h2>Support</h2><div id="support-content">Loading...</div></section>
       <section id="audit-section" class="admin-section hidden"><h2>Audit Log</h2><div id="audit-content">Loading...</div></section>
